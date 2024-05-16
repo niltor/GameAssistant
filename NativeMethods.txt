@@ -1,0 +1,13 @@
+FindWindow
+GetClientRect
+GetDC
+ReleaseDC
+SetCursorPos
+mouse_event
+GetPixel
+BitBlt
+CreateCompatibleDC
+CreateCompatibleBitmap
+SelectObject
+DeleteDC
+DeleteObject
