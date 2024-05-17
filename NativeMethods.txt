@@ -11,6 +11,8 @@ EnumProcesses
 GetWindowRect
 GetClientRect
 SetCapture
+SetFocus
+EnableWindow
 GetDC
 ReleaseDC
 SetCursorPos

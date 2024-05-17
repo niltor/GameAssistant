@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
@@ -46,22 +47,24 @@ internal class Helper
     {
         PInvoke.SetCapture(targetWindowHandle);
         PInvoke.SetForegroundWindow(targetWindowHandle);
+        PInvoke.SetFocus(targetWindowHandle);
+        PInvoke.EnableWindow(targetWindowHandle, true);
 
+        Thread.Sleep(500);
         var point = new Point(x, y);
         //PInvoke.ScreenToClient(targetWindowHandle, ref point);
         PInvoke.SetCursorPos(point.X, point.Y);
 
-
-        INPUT[] inputs =
+        Span<INPUT> inputs =
         [
-            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN | MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP,point.X, point.Y),
-            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN | MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP,point.X, point.Y),
+            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN, 0, 0),
+            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP, 0, 0),
         ];
-        var res = PInvoke.SendInput(inputs, inputs.Length);
+        var res = PInvoke.SendInput(inputs, Marshal.SizeOf(typeof(INPUT)));
 
-        Thread.Sleep(500);
-        PInvoke.SendInput(inputs, inputs.Length);
+        var message = Marshal.GetLastPInvokeErrorMessage();
 
+        Console.WriteLine("The last Win32 Error was: " + message);
         Console.WriteLine(res);
     }
 
@@ -73,6 +76,7 @@ internal class Helper
             dx = x,
             dy = y,
             dwFlags = eVENT_FLAGS,
+            mouseData = 0,
         };
 
         return new INPUT
@@ -81,6 +85,26 @@ internal class Helper
             Anonymous = new INPUT._Anonymous_e__Union
             {
                 mi = mouseInput
+            }
+        };
+    }
+    private static INPUT CreateKeyBoardInput(VIRTUAL_KEY key, KEYBD_EVENT_FLAGS? eVENT_FLAGS = null)
+    {
+        var keyBoardInput = new KEYBDINPUT
+        {
+            wVk = key,
+        };
+        if (eVENT_FLAGS != null)
+        {
+            keyBoardInput.dwFlags = eVENT_FLAGS.Value;
+        }
+
+        return new INPUT
+        {
+            type = INPUT_TYPE.INPUT_MOUSE,
+            Anonymous = new INPUT._Anonymous_e__Union
+            {
+                ki = keyBoardInput
             }
         };
     }

@@ -2,6 +2,6 @@
 using GameAssistant;
 
 
-//Helper.EnumWindows();
-var windowHandler = Helper.GetWindow("MuMu模拟器12");
+Helper.EnumWindows();
+var windowHandler = Helper.GetWindow("Untitled - Paint");
 Helper.SetCursorAndClick(windowHandler, 500, 500);
