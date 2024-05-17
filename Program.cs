@@ -1,2 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+using GameAssistant;
+
+
+//Helper.EnumWindows();
+var windowHandler = Helper.GetWindow("MuMu模拟器12");
+Helper.SetCursorAndClick(windowHandler, 500, 500);

@@ -1,5 +1,5 @@
-﻿using System.Drawing;
-
+﻿using System.Diagnostics;
+using System.Drawing;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Gdi;
@@ -8,41 +8,81 @@ using Windows.Win32.UI.Input.KeyboardAndMouse;
 namespace GameAssistant;
 internal class Helper
 {
-    public static void GetWindow(string name)
+    public static void EnumWindows()
+    {
+        Process[] allProcesses = Process.GetProcesses();
+
+        // 遍历所有进程
+        foreach (Process process in allProcesses)
+        {
+            // 现在你可以访问 process 的属性，例如进程 ID、主窗口句柄、主窗口标题等。
+            int processId = process.Id;
+            IntPtr mainWindowHandle = process.MainWindowHandle;
+            string mainWindowTitle = process.MainWindowTitle;
+            // 在这里你可以将这些信息显示在列表中或者进行其他操作。
+
+            if (!string.IsNullOrEmpty(mainWindowTitle))
+                Console.WriteLine(mainWindowTitle + ":" + mainWindowHandle);
+        }
+    }
+
+    public static HWND GetWindow(string name)
     {
         // 获取目标窗口句柄
         HWND hWnd = PInvoke.FindWindow(null, name);
         if (hWnd == IntPtr.Zero)
         {
             Console.WriteLine("未找到窗口");
-            return;
         }
 
         // 获取窗口大小
         PInvoke.GetClientRect(hWnd, out RECT rect);
         Console.WriteLine($"窗口大小: 宽度={rect.right - rect.left}, 高度={rect.bottom - rect.top}");
-
-        // 在特定坐标点击鼠标
-        int clickX = 100;
-        int clickY = 100;
-        SetCursorAndClick(clickX, clickY);
-
-        // 在特定坐标范围截图
-        Bitmap screenshot = CaptureScreen(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top);
-        screenshot.Save("screenshot.png");
-
-        // 获取某坐标点的颜色
-        Color color = GetPixelColor(clickX, clickY);
-        Console.WriteLine($"颜色: R={color.R}, G={color.G}, B={color.B}");
+        return hWnd;
     }
 
 
-    public static void SetCursorAndClick(int x, int y)
+    public static void SetCursorAndClick(HWND targetWindowHandle, int x, int y)
     {
-        PInvoke.SetCursorPos(x, y);
-        PInvoke.mouse_event(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, (nuint)IntPtr.Zero);
-        Thread.Sleep(50); // 添加一个小延迟
-        PInvoke.mouse_event(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, (nuint)IntPtr.Zero);
+        PInvoke.SetCapture(targetWindowHandle);
+        PInvoke.SetForegroundWindow(targetWindowHandle);
+
+        var point = new Point(x, y);
+        //PInvoke.ScreenToClient(targetWindowHandle, ref point);
+        PInvoke.SetCursorPos(point.X, point.Y);
+
+
+        INPUT[] inputs =
+        [
+            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN | MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP,point.X, point.Y),
+            CreateMouseInput(MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTDOWN | MOUSE_EVENT_FLAGS.MOUSEEVENTF_LEFTUP,point.X, point.Y),
+        ];
+        var res = PInvoke.SendInput(inputs, inputs.Length);
+
+        Thread.Sleep(500);
+        PInvoke.SendInput(inputs, inputs.Length);
+
+        Console.WriteLine(res);
+    }
+
+
+    private static INPUT CreateMouseInput(MOUSE_EVENT_FLAGS eVENT_FLAGS, int x, int y)
+    {
+        var mouseInput = new MOUSEINPUT
+        {
+            dx = x,
+            dy = y,
+            dwFlags = eVENT_FLAGS,
+        };
+
+        return new INPUT
+        {
+            type = INPUT_TYPE.INPUT_MOUSE,
+            Anonymous = new INPUT._Anonymous_e__Union
+            {
+                mi = mouseInput
+            }
+        };
     }
 
     public static Bitmap CaptureScreen(int x, int y, int width, int height)

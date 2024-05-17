@@ -1,9 +1,20 @@
+EnumWindows
 FindWindow
+GetWindowText
+GetWindowTextLength
+GetWindowThreadProcessId
+IsWindowVisible
+IsWindowEnabled
+SetForegroundWindow
+GetForegroundWindow
+EnumProcesses
+GetWindowRect
 GetClientRect
+SetCapture
 GetDC
 ReleaseDC
 SetCursorPos
-mouse_event
+SendInput
 GetPixel
 BitBlt
 CreateCompatibleDC
@@ -11,3 +22,5 @@ CreateCompatibleBitmap
 SelectObject
 DeleteDC
 DeleteObject
+SendMessage
+ScreenToClient
