@@ -1,4 +1,6 @@
-﻿using Tesseract;
+﻿using OpenCvSharp;
+
+using Tesseract;
 
 namespace GameAssistant;
 public class ActionHelper
@@ -12,6 +14,11 @@ public class ActionHelper
     /// 窗口高
     /// </summary>
     public int Height { get; private set; }
+
+    /// <summary>
+    /// 操作栏固定高度
+    /// </summary>
+    public readonly int ActionBarHeight = 36;
 
     public int WidthPix { get; private set; } = 900;
     public int HeightPix { get; private set; } = 1600;
@@ -180,11 +187,21 @@ public class ActionHelper
         return Color.FromArgb(r, g, b);
     }
 
+    /// <summary>
+    /// ocr图片识别
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <returns></returns>
     public string GetTextFromOCR(byte[] bytes)
     {
-        using (var engine = new TesseractEngine("./", "eng", EngineMode.Default))
+        Mat image = Cv2.ImDecode(bytes, ImreadModes.Color);
+        Mat grayImage = new Mat();
+        Cv2.CvtColor(image, grayImage, ColorConversionCodes.RGB2GRAY);
+        Cv2.Threshold(grayImage, grayImage, 200, 255, ThresholdTypes.Binary);
+
+        using (var engine = new TesseractEngine("./tessdata", "eng", EngineMode.Default))
         {
-            using (var img = Pix.LoadFromMemory(bytes))
+            using (var img = Pix.LoadFromMemory(grayImage.ToBytes(".jpg")))
             {
                 using (var page = engine.Process(img))
                 {
@@ -195,24 +212,6 @@ public class ActionHelper
             }
         }
     }
-
-    public string GetTextFromFile(string path)
-    {
-        using (var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default))
-        {
-            using (var img = Pix.LoadFromFile(path))
-            {
-                using (var page = engine.Process(img))
-                {
-                    string text = page.GetText();
-                    Console.WriteLine($"识别的文本：{text}");
-                    return text;
-                }
-            }
-        }
-    }
-
-
 
     /// <summary>
     /// 客户端转屏幕坐标
@@ -221,7 +220,7 @@ public class ActionHelper
     /// <param name="y"></param>
     private void ClientToScreen(ref int x, ref int y)
     {
-        Point point = new() { X = x, Y = y };
+        System.Drawing.Point point = new() { X = x, Y = y };
 
         PInvoke.ClientToScreen(TargetWindow, ref point);
         x = point.X;

@@ -29,9 +29,11 @@ static async Task Test()
     var helper = new ActionHelper("MuMu模拟器12");
     helper.EnableWindow();
     await Task.Delay(200);
+    var ocrPath = @"./test.jpg";
+    // read image as bytes 
+    var image = File.ReadAllBytes(ocrPath);
+    helper.GetTextFromOCR(image);
 
-    var ocrPath = @"./test.png";
-    helper.GetTextFromFile(ocrPath);
 
 }
 
