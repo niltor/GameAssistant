@@ -15,15 +15,10 @@ public class ActionHelper
     /// </summary>
     public int Height { get; private set; }
 
-    /// <summary>
-    /// 操作栏固定高度
-    /// </summary>
-    public readonly int ActionBarHeight = 36;
-
     public int WidthPix { get; private set; } = 900;
     public int HeightPix { get; private set; } = 1600;
 
-    public ActionHelper(string windowName, int actionBarHeight = 0)
+    public ActionHelper(string windowName)
     {
         TargetWindow = PInvoke.FindWindow(null, windowName);
         if (TargetWindow == IntPtr.Zero)
@@ -35,7 +30,6 @@ public class ActionHelper
 
         Width = rect.right - rect.left;
         Height = rect.bottom - rect.top;
-        Height -= actionBarHeight;
 
         Console.WriteLine($"窗口大小: 宽度={rect.right - rect.left}, 高度={rect.bottom - rect.top}");
     }
@@ -254,9 +248,6 @@ public class ActionHelper
 
         // 比较直方图
         double similarity = Cv2.CompareHist(hist1, hist2, HistCompMethods.Correl);
-
-
-        Console.WriteLine(similarity);
         return similarity;
     }
 }

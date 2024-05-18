@@ -3,7 +3,7 @@
 namespace GameAssistant.GameEngine;
 internal class GameEngineBase(string windowName, int actionBarHight)
 {
-    public ActionHelper Helper { get; set; } = new ActionHelper(windowName, actionBarHight);
+    public ActionHelper Helper { get; set; } = new ActionHelper(windowName);
 
     public Channel<ClickAction> ActionChannel { get; set; } = Channel.CreateBounded<ClickAction>(100);
 
@@ -19,11 +19,18 @@ internal class GameEngineBase(string windowName, int actionBarHight)
 
     public Point ToPoint(NormalizedPoint point)
     {
-        return new Point((int)(point.X * Helper.Width), (int)(point.Y * Helper.Height));
+        var x = (int)(point.X * Helper.Width);
+        var y = (int)(point.Y * (Helper.Height - actionBarHight)) + actionBarHight;
+        return new Point(x, y);
     }
 
+    public Point ToSize(NormalizedPoint point)
+    {
+        var x = (int)(point.X * Helper.Width);
+        var y = (int)(point.Y * (Helper.Height - actionBarHight));
+        return new Point(x, y);
+    }
 }
-
 
 struct NormalizedPoint
 {
@@ -68,7 +75,7 @@ struct NormalizedRect
 /// <summary>
 /// 点击事件
 /// </summary>
-struct ClickAction(NormalizedPoint point, int delay = 0)
+struct ClickAction(NormalizedPoint point, int delay = 200)
 {
     public NormalizedPoint Point = point;
     public int Delay = delay;

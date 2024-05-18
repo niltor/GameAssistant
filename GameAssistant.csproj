@@ -25,13 +25,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="assets\test_chapter.jpg">
+		<None Update="assets\HeroesHordes\analyze.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="assets\test.jpg">
+		<None Update="assets\HeroesHordes\reward.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="assets\test_level.jpg">
+		<None Update="assets\HeroesHordes\timer.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="tessdata\eng.traineddata">

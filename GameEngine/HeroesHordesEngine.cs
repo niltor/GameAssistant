@@ -31,7 +31,7 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <summary>
     /// 波次完成
     /// </summary>
-    public NormalizedPoint WavePoint { get; set; } = new(5f, 0.7062f);
+    public NormalizedPoint WavePoint { get; set; } = new(0.5f, 0.7062f);
 
     /// <summary>
     /// play 按钮位置
@@ -79,6 +79,7 @@ internal class HeroesHordesEngine : GameEngineBase
         {
             if (CanRun())
             {
+                Console.WriteLine("Start Run");
                 var point = ToPoint(PlayPoint);
                 Helper.Click(point.X, point.Y);
                 await Task.Delay(1000);
@@ -96,8 +97,9 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public async Task PreStartAsync()
     {
-        AnalyzeImage = await File.ReadAllBytesAsync(@$"./{GameName}/analyze.jpg");
-        TimerImage = await File.ReadAllBytesAsync(@$"./{GameName}/timer.jpg");
+        AnalyzeImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/analyze.jpg");
+        TimerImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/timer.jpg");
+        RewardImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/reward.jpg");
     }
 
     public async Task LoopAsync()
@@ -106,6 +108,7 @@ internal class HeroesHordesEngine : GameEngineBase
         {
             if (IsWaveEnd())
             {
+                Console.WriteLine("Wave End");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(WavePoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
@@ -115,20 +118,23 @@ internal class HeroesHordesEngine : GameEngineBase
             }
             else if (IsReward())
             {
+                Console.WriteLine("Reward");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
 
             }
             else
             {
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 200));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 500));
+
             }
-            await Task.Delay(1000);
+            await Task.Delay(2000);
         }
 
+        Console.WriteLine("End");
         await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
         await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
     }
@@ -146,7 +152,7 @@ internal class HeroesHordesEngine : GameEngineBase
         }
 
         var point = ToPoint(RewardRect.Start);
-        var size = ToPoint(RewardRect.Size);
+        var size = ToSize(RewardRect.Size);
         var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
@@ -168,16 +174,20 @@ internal class HeroesHordesEngine : GameEngineBase
         {
             throw new ArgumentNullException(nameof(AnalyzeImage));
         }
-
         var point = ToPoint(WaveRect.Start);
-        var size = ToPoint(WaveRect.Size);
+        var size = ToSize(WaveRect.Size);
         var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
-
         var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
-        return similarity > 0.5;
+        if (similarity <= 0.3)
+        {
+            Console.WriteLine("Wave similarity:" + similarity);
+            bitmap.Save($"screen-wave.jpg");
+
+        }
+        return similarity > 0.3;
     }
 
 
@@ -194,25 +204,32 @@ internal class HeroesHordesEngine : GameEngineBase
         }
 
         var point = ToPoint(EndRect.Start);
-        var size = ToPoint(EndRect.Size);
+        var size = ToSize(EndRect.Size);
         var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
 
         var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
+
+        if (similarity < 0.5)
+        {
+            bitmap.Save($"screen-end.jpg");
+
+        }
         return similarity > 0.5;
     }
 
     private bool CanRun()
     {
         var point = ToPoint(PlayRect.Start);
-        var size = ToPoint(PlayRect.Size);
+        var size = ToSize(PlayRect.Size);
         var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
         var text = Helper.GetTextFromOCR(imageBytes);
-        return text.Contains("Play");
+
+        return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
     }
 }
