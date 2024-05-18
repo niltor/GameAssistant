@@ -25,8 +25,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="dddd.png">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		<None Update="assets\test_chapter.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="assets\test.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="assets\test_level.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="tessdata\eng.traineddata">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -23,7 +23,7 @@ public class ActionHelper
     public int WidthPix { get; private set; } = 900;
     public int HeightPix { get; private set; } = 1600;
 
-    public ActionHelper(string windowName)
+    public ActionHelper(string windowName, int actionBarHeight = 0)
     {
         TargetWindow = PInvoke.FindWindow(null, windowName);
         if (TargetWindow == IntPtr.Zero)
@@ -35,6 +35,7 @@ public class ActionHelper
 
         Width = rect.right - rect.left;
         Height = rect.bottom - rect.top;
+        Height -= actionBarHeight;
 
         Console.WriteLine($"窗口大小: 宽度={rect.right - rect.left}, 高度={rect.bottom - rect.top}");
     }
@@ -44,7 +45,7 @@ public class ActionHelper
     /// </summary>
     /// <param name="width"></param>
     /// <param name="height"></param>
-    public void SetStandardSize(int width, int height)
+    public void SetScreenResolution(int width, int height)
     {
         WidthPix = width;
         HeightPix = height;
@@ -225,5 +226,37 @@ public class ActionHelper
         PInvoke.ClientToScreen(TargetWindow, ref point);
         x = point.X;
         y = point.Y;
+    }
+
+    /// <summary>
+    /// 图片相似度比较
+    /// </summary>
+    /// <param name="origin"></param>
+    /// <param name="compare"></param>
+    public double GetSimilar(byte[] origin, byte[] compare)
+    {
+
+        // 加载两张图片
+        Mat img1 = Cv2.ImDecode(origin, ImreadModes.Grayscale);
+        Mat img2 = Cv2.ImDecode(compare, ImreadModes.Grayscale);
+
+        // 计算直方图
+        int[] histSize = [256];
+        Rangef[] ranges = [new Rangef(0, 256)];
+        var hist1 = new Mat();
+        var hist2 = new Mat();
+        Cv2.CalcHist([img1], [0], null, hist1, 1, histSize, ranges);
+        Cv2.CalcHist([img2], [0], null, hist2, 1, histSize, ranges);
+
+        // 归一化直方图
+        Cv2.Normalize(hist1, hist1, 0, 1, NormTypes.MinMax);
+        Cv2.Normalize(hist2, hist2, 0, 1, NormTypes.MinMax);
+
+        // 比较直方图
+        double similarity = Cv2.CompareHist(hist1, hist2, HistCompMethods.Correl);
+
+
+        Console.WriteLine(similarity);
+        return similarity;
     }
 }
