@@ -4,9 +4,7 @@ namespace GameAssistant.GameEngine;
 
 internal class HeroesHordesEngine : GameEngineBase
 {
-    public const string GameName = "HeroesHordes";
-
-    public NormalizedPoint NoActionPoint { get; set; } = new(0.0202f, 0.1139f);
+    public NormalizedPoint NoActionPoint { get; set; } = new(0.0202f, 0.113f);
 
     /// <summary>
     /// 主要点击
@@ -40,26 +38,30 @@ internal class HeroesHordesEngine : GameEngineBase
     /// </summary>
     public NormalizedRect PlayRect { get; set; } = new(0.3543f, 0.7631f, 0.5061f, 0.7973f);
 
-    public NormalizedRect EndRect { get; set; } = new(0.1498f, 0.8952f, 0.2389f, 0.9431f);
+    public NormalizedRect EndRect { get; set; } = new(0.1417f, 0.0513f, 0.8603f, 0.1139f);
 
-    public NormalizedRect WaveRect { get; set; } = new(0.4615f, 0.9089f, 0.5364f, 0.951f);
+    public NormalizedRect WaveRect { get; set; } = new(0.2652f, 0.672f, 0.7368f, 0.7312f);
 
     public NormalizedRect RewardRect { get; set; } = new(0.3138f, 0.8998f, 0.6883f, 0.9624f);
 
 
-    public byte[]? AnalyzeImage { get; set; }
+    public byte[]? EndImage { get; set; }
+    public byte[]? WaveImage { get; set; }
     public byte[]? TimerImage { get; set; }
     public byte[]? RewardImage { get; set; }
 
+    private static bool IsPausing = false;
+    private static bool IsRunning = false;
+
     public HeroesHordesEngine(string windowName, int actionBarHeight = 36) : base(windowName, actionBarHeight)
     {
+        GameName = "HeroesHordes";
         SetScreenResolution(900, 1600);
     }
 
-
     public async Task RunAsync(int seconds = 0)
     {
-        Console.WriteLine("Start Run");
+        Log("=== 🚀 Start Run ===");
         seconds = seconds == 0 ? 30 * 24 * 60 * 60 : seconds;
         var endTime = DateTime.Now.AddSeconds(seconds);
         await PreStartAsync();
@@ -67,26 +69,33 @@ internal class HeroesHordesEngine : GameEngineBase
         {
             while (await ActionChannel.Reader.WaitToReadAsync())
             {
-                if (ActionChannel.Reader.TryRead(out var message))
+                if (ActionChannel.Reader.TryRead(out var action))
                 {
-                    var point = ToPoint(message.Point);
+                    var point = ToPoint(action.Point);
                     Helper.Click(point.X, point.Y);
-                    await Task.Delay(message.Delay);
+                    await Task.Delay(action.Delay);
                 }
             }
         });
-
+        int i = 1;
         while (DateTime.Now < endTime)
         {
-            Console.WriteLine("Try Loop");
+            Log($"第[{i}]次运行...");
+            i++;
             await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-            if (CanRun())
+            if (WaitToPlay())
             {
-                Console.WriteLine("New Loop");
+                Log("New Round!");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(PlayPoint, 200));
-                await Task.Delay(3000);
+                await Task.Delay(5000);
             }
-            await LoopAsync();
+
+            SetFlag(ref IsRunning, true);
+            SetFlag(ref IsPausing, false);
+            await CheckStatusAsync();
+            SetFlag(ref IsRunning, false);
+            SetFlag(ref IsPausing, true);
+
             await Task.Delay(10 * 1000);
         }
 
@@ -96,55 +105,86 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public async Task PreStartAsync()
     {
-        Console.WriteLine("Loading assets...");
-        AnalyzeImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/analyze.jpg");
+        Log("Loading assets...");
+        EndImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/end.jpg");
         TimerImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/timer.jpg");
         RewardImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/reward.jpg");
+        WaveImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/wave.jpg");
     }
 
-    public async Task LoopAsync()
+    /// <summary>
+    /// 状态检查
+    /// </summary>
+    /// <returns></returns>
+    public async Task CheckStatusAsync()
     {
-        Console.WriteLine("Loop Running...");
         while (!IsEnd())
         {
+            var waitSecnods = 5000;
             if (IsWaveEnd())
             {
-                Console.WriteLine("Wave End");
+                ClearQueue();
+                Log("Wave End");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(WavePoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
+                await Task.Delay(2000);
+
             }
             else if (IsReward())
             {
-                Console.WriteLine("Reward");
+                ClearQueue();
+                Log("Reward");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
+                await Task.Delay(3000);
             }
-
             else
             {
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
+                waitSecnods = 1500;
+                await LoopActionAsync();
             }
-            await Task.Delay(2000);
+            await Task.Delay(waitSecnods);
         }
-        Console.WriteLine("Loop end");
-        await EndActions();
-
+        Log("✅ End Status...");
+        await EndActionsAsync();
+    }
+    /// <summary>
+    /// 循环操作
+    /// </summary>
+    /// <returns></returns>
+    public async Task LoopActionAsync()
+    {
+        await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
+        await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
+        await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 200));
+        await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
     }
 
-    public async Task EndActions()
+    /// <summary>
+    /// 结束操作
+    /// </summary>
+    /// <returns></returns>
+    public async Task EndActionsAsync()
     {
-        Console.WriteLine("End");
+        ClearQueue();
+        Log("End");
         await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
-        await Task.Delay(2000);
+        await Task.Delay(2500);
         await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
-        await Task.Delay(2000);
+        await Task.Delay(500);
         await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
-        await Task.Delay(2000);
-        await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
+        await Task.Delay(5000);
+        for (int i = 0; i < 4; i++)
+        {
+            await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 500));
+        }
+    }
+
+    // 清空队列 
+    private void ClearQueue()
+    {
+        _ = ActionChannel.Reader.ReadAllAsync();
     }
 
     private bool IsReward()
@@ -160,12 +200,11 @@ internal class HeroesHordesEngine : GameEngineBase
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
+        stream.Close();
 
-        bitmap.Save("./screen-reward.jpg");
-        var similarity = Helper.GetSimilar(RewardImage, imageBytes);
-        return similarity > 0.33;
+        var similarity = ActionHelper.GetSimilar(RewardImage, imageBytes);
+        return similarity > 0.5;
     }
-
 
     /// <summary>
     /// 是否波次结束
@@ -174,19 +213,21 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <exception cref="ArgumentNullException"></exception>
     private bool IsWaveEnd()
     {
-        if (AnalyzeImage == null)
+        if (WaveImage == null)
         {
-            throw new ArgumentNullException(nameof(AnalyzeImage));
+            throw new ArgumentNullException(nameof(WaveImage));
         }
         var point = ToPoint(WaveRect.Start);
         var size = ToSize(WaveRect.Size);
         var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
         using var stream = new MemoryStream();
+
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
-        var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
+        stream.Close();
 
-        return similarity > 0.33;
+        var similarity = ActionHelper.GetSimilar(WaveImage, imageBytes);
+        return similarity > 0.5;
     }
 
 
@@ -197,9 +238,9 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <exception cref="ArgumentNullException"></exception>
     private bool IsEnd()
     {
-        if (AnalyzeImage == null)
+        if (EndImage == null)
         {
-            throw new ArgumentNullException(nameof(AnalyzeImage));
+            throw new ArgumentNullException(nameof(EndImage));
         }
 
         var point = ToPoint(EndRect.Start);
@@ -208,12 +249,13 @@ internal class HeroesHordesEngine : GameEngineBase
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
-        var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
+        stream.Close();
 
-        return similarity > 0.33;
+        var similarity = ActionHelper.GetSimilar(EndImage, imageBytes);
+        return similarity > 0.5;
     }
 
-    private bool CanRun()
+    private bool WaitToPlay()
     {
         var point = ToPoint(PlayRect.Start);
         var size = ToSize(PlayRect.Size);
@@ -221,8 +263,15 @@ internal class HeroesHordesEngine : GameEngineBase
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
+
+        stream.Close();
         var text = Helper.GetTextFromOCR(imageBytes);
 
         return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    private void SetFlag(ref bool flag, bool val)
+    {
+        Volatile.Write(ref flag, val);
     }
 }

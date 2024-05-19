@@ -8,5 +8,4 @@ internal interface IGameEngine
     Task EndActions();
     bool IsEnd();
 
-
 }

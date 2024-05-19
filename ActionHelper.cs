@@ -226,20 +226,25 @@ public class ActionHelper
     /// </summary>
     /// <param name="origin"></param>
     /// <param name="compare"></param>
-    public double GetSimilar(byte[] origin, byte[] compare)
+    public static double GetSimilar(byte[] origin, byte[] compare)
     {
-
         // 加载两张图片
-        Mat img1 = Cv2.ImDecode(origin, ImreadModes.Grayscale);
-        Mat img2 = Cv2.ImDecode(compare, ImreadModes.Grayscale);
+        Mat img1 = Cv2.ImDecode(origin, ImreadModes.Color);
+        Mat img2 = Cv2.ImDecode(compare, ImreadModes.Color);
+
+        Cv2.CvtColor(img1, img1, ColorConversionCodes.BGR2HSV);
+        Cv2.CvtColor(img2, img2, ColorConversionCodes.BGR2HSV);
 
         // 计算直方图
-        int[] histSize = [256];
-        Rangef[] ranges = [new Rangef(0, 256)];
+        int[] histSize = [50, 60];
+        Rangef[] ranges = [new Rangef(0, 180), new Rangef(0, 256)];
+        int[] channels = [0, 1];
+
         var hist1 = new Mat();
         var hist2 = new Mat();
-        Cv2.CalcHist([img1], [0], null, hist1, 1, histSize, ranges);
-        Cv2.CalcHist([img2], [0], null, hist2, 1, histSize, ranges);
+
+        Cv2.CalcHist([img1], channels, null, hist1, 2, histSize, ranges);
+        Cv2.CalcHist([img2], channels, null, hist2, 2, histSize, ranges);
 
         // 归一化直方图
         Cv2.Normalize(hist1, hist1, 0, 1, NormTypes.MinMax);

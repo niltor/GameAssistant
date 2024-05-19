@@ -25,7 +25,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="assets\HeroesHordes\analyze.jpg">
+		<None Update="assets\HeroesHordes\end.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="assets\HeroesHordes\reward.jpg">
@@ -34,11 +34,18 @@
 		<None Update="assets\HeroesHordes\timer.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+		<None Update="assets\HeroesHordes\wave.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="tessdata\eng.traineddata">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="test.png">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="logs\" />
 	</ItemGroup>
 </Project>

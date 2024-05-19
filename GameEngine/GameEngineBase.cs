@@ -4,6 +4,7 @@ namespace GameAssistant.GameEngine;
 internal class GameEngineBase(string windowName, int actionBarHight)
 {
     public ActionHelper Helper { get; set; } = new ActionHelper(windowName);
+    protected string GameName { get; set; } = string.Empty;
 
     public Channel<ClickAction> ActionChannel { get; set; } = Channel.CreateBounded<ClickAction>(100);
 
@@ -15,6 +16,22 @@ internal class GameEngineBase(string windowName, int actionBarHight)
     public void SetScreenResolution(int width, int height)
     {
         Helper.SetScreenResolution(width, height);
+    }
+
+    public void Log(string content)
+    {
+        var dirName = "./logs";
+        var date = DateTime.Now.ToString("yyyy-MM-dd");
+        if (!Directory.Exists(dirName))
+        {
+            Directory.CreateDirectory(dirName);
+        }
+        var path = Path.Combine(dirName, $"{GameName + date}.log");
+        using (var writer = new StreamWriter(path, true))
+        {
+            var time = DateTime.Now.ToString("HH:mm:ss");
+            writer.WriteLine($"[{time}]:\t{content}");
+        }
     }
 
     public Point ToPoint(NormalizedPoint point)
