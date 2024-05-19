@@ -28,6 +28,8 @@ internal class HeroesHordesEngine : GameEngineBase
     /// </summary>
     public NormalizedPoint RewardPoint { get; set; } = new(0.5061f, 0.9282f);
 
+    public NormalizedPoint OpenBoxPoint { get; set; } = new(0.5061f, 0.7745f);
+
     /// <summary>
     /// 波次完成
     /// </summary>
@@ -57,11 +59,10 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public async Task RunAsync(int seconds = 0)
     {
+        Console.WriteLine("Start Run");
         seconds = seconds == 0 ? 30 * 24 * 60 * 60 : seconds;
         var endTime = DateTime.Now.AddSeconds(seconds);
-
         await PreStartAsync();
-
         var consumer = Task.Run(async () =>
         {
             while (await ActionChannel.Reader.WaitToReadAsync())
@@ -77,18 +78,16 @@ internal class HeroesHordesEngine : GameEngineBase
 
         while (DateTime.Now < endTime)
         {
+            Console.WriteLine("Try Loop");
+            await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
             if (CanRun())
             {
-                Console.WriteLine("Start Run");
-                var point = ToPoint(PlayPoint);
-                Helper.Click(point.X, point.Y);
-                await Task.Delay(1000);
-                await LoopAsync();
+                Console.WriteLine("New Loop");
+                await ActionChannel.Writer.WriteAsync(new ClickAction(PlayPoint, 200));
+                await Task.Delay(3000);
             }
-            else
-            {
-                await Task.Delay(20 * 1000);
-            }
+            await LoopAsync();
+            await Task.Delay(10 * 1000);
         }
 
         ActionChannel.Writer.Complete();
@@ -97,6 +96,7 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public async Task PreStartAsync()
     {
+        Console.WriteLine("Loading assets...");
         AnalyzeImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/analyze.jpg");
         TimerImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/timer.jpg");
         RewardImage = await File.ReadAllBytesAsync(@$"./assets/{GameName}/reward.jpg");
@@ -104,6 +104,7 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public async Task LoopAsync()
     {
+        Console.WriteLine("Loop Running...");
         while (!IsEnd())
         {
             if (IsWaveEnd())
@@ -112,36 +113,38 @@ internal class HeroesHordesEngine : GameEngineBase
                 await ActionChannel.Writer.WriteAsync(new ClickAction(WavePoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-                await Task.Delay(1000);
             }
             else if (IsReward())
             {
                 Console.WriteLine("Reward");
-                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
-
+                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
             }
+
             else
             {
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 500));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 500));
-
+                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 200));
+                await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
             }
             await Task.Delay(2000);
         }
+        Console.WriteLine("Loop end");
+        await EndActions();
 
-        Console.WriteLine("End");
-        await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-        await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
     }
 
-    public Task EndActions()
+    public async Task EndActions()
     {
-        throw new NotImplementedException();
+        Console.WriteLine("End");
+        await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
+        await Task.Delay(2000);
+        await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
+        await Task.Delay(2000);
+        await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
+        await Task.Delay(2000);
+        await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
     }
 
     private bool IsReward()
@@ -158,8 +161,9 @@ internal class HeroesHordesEngine : GameEngineBase
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
 
+        bitmap.Save("./screen-reward.jpg");
         var similarity = Helper.GetSimilar(RewardImage, imageBytes);
-        return similarity > 0.5;
+        return similarity > 0.33;
     }
 
 
@@ -181,13 +185,8 @@ internal class HeroesHordesEngine : GameEngineBase
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
         var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
-        if (similarity <= 0.3)
-        {
-            Console.WriteLine("Wave similarity:" + similarity);
-            bitmap.Save($"screen-wave.jpg");
 
-        }
-        return similarity > 0.3;
+        return similarity > 0.33;
     }
 
 
@@ -209,15 +208,9 @@ internal class HeroesHordesEngine : GameEngineBase
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
-
         var similarity = Helper.GetSimilar(AnalyzeImage, imageBytes);
 
-        if (similarity < 0.5)
-        {
-            bitmap.Save($"screen-end.jpg");
-
-        }
-        return similarity > 0.5;
+        return similarity > 0.33;
     }
 
     private bool CanRun()

@@ -201,7 +201,6 @@ public class ActionHelper
                 using (var page = engine.Process(img))
                 {
                     string text = page.GetText();
-                    Console.WriteLine($"识别的文本：{text}");
                     return text;
                 }
             }
