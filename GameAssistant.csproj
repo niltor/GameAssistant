@@ -25,7 +25,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="assets\HeroesHordes\close.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="assets\HeroesHordes\end.jpg">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="assets\HeroesHordes\noEnergy.jpg">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="assets\HeroesHordes\reward.jpg">

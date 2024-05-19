@@ -140,6 +140,7 @@ internal class HeroesHordesEngine : GameEngineBase
                 var point = DialogCloseRect.Start;
                 point.X += 0.015f;
                 point.Y += 0.01f;
+                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(point, 200));
             }
 

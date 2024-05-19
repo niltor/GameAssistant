@@ -3,7 +3,8 @@ using GameAssistant.GameEngine;
 
 var engine = new HeroesHordesEngine("MuMu模拟器12");
 
-await engine.RunAsync(3600);
+var seconds = (int)TimeSpan.FromHours(4).TotalSeconds;
+await engine.RunAsync(seconds);
 
 
 
