@@ -234,8 +234,9 @@ internal class HeroesHordesEngine : GameEngineBase
     {
         if (await ActionChannel.Reader.WaitToReadAsync())
         {
-            while (ActionChannel.Reader.TryRead(out _))
+            while (ActionChannel.Reader.TryRead(out var action))
             {
+                Console.WriteLine(action.ToString());
             }
         }
     }

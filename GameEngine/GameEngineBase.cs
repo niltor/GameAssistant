@@ -96,4 +96,9 @@ struct ClickAction(NormalizedPoint point, int delay = 200)
 {
     public NormalizedPoint Point = point;
     public int Delay = delay;
+
+    public override string ToString()
+    {
+        return $"点击坐标: {Point.X}, {Point.Y}, 延迟: {Delay}";
+    }
 }
