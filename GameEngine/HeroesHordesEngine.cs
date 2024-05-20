@@ -169,7 +169,7 @@ internal class HeroesHordesEngine : GameEngineBase
             var waitSeconds = 3600;
             if (IsWaveEnd())
             {
-                ClearQueue();
+                await ClearQueueAsync();
                 Log("Wave End");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(WavePoint, 200));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
@@ -179,7 +179,7 @@ internal class HeroesHordesEngine : GameEngineBase
             }
             else if (IsReward())
             {
-                ClearQueue();
+                await ClearQueueAsync();
                 Log("Reward");
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
                 await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
@@ -215,7 +215,7 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <returns></returns>
     public async Task EndActionsAsync()
     {
-        ClearQueue();
+        await ClearQueueAsync();
         Log("End");
         await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
         await Task.Delay(2500);
@@ -230,9 +230,12 @@ internal class HeroesHordesEngine : GameEngineBase
     }
 
     // 清空队列 
-    private void ClearQueue()
+    private async Task ClearQueueAsync()
     {
-        _ = ActionChannel.Reader.ReadAllAsync();
+        while (await ActionChannel.Reader.WaitToReadAsync())
+        {
+            // do nothing
+        }
     }
 
     private bool IsReward()
