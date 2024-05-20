@@ -72,11 +72,14 @@ internal class HeroesHordesEngine : GameEngineBase
         await PreStartAsync();
         var consumer = Task.Run(async () =>
         {
-            while (ActionQueue.TryDequeue(out var action))
+            while (DateTime.Now < endTime)
             {
-                var point = ToPoint(action.Point);
-                Helper.Click(point.X, point.Y);
-                await Task.Delay(action.Delay);
+                if (ActionQueue.TryDequeue(out var action))
+                {
+                    var point = ToPoint(action.Point);
+                    Helper.Click(point.X, point.Y);
+                    await Task.Delay(action.Delay);
+                }
             }
         });
 
