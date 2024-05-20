@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+﻿using System.Collections.Concurrent;
 
 namespace GameAssistant.GameEngine;
 internal class GameEngineBase(string windowName, int actionBarHight)
@@ -6,7 +6,7 @@ internal class GameEngineBase(string windowName, int actionBarHight)
     public ActionHelper Helper { get; set; } = new ActionHelper(windowName);
     protected string GameName { get; set; } = string.Empty;
 
-    public Channel<ClickAction> ActionChannel { get; set; } = Channel.CreateBounded<ClickAction>(100);
+    public ConcurrentQueue<ClickAction> ActionQueue { get; set; } = new ConcurrentQueue<ClickAction>();
 
     /// <summary>
     /// 设置分辨率

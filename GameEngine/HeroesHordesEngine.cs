@@ -72,14 +72,11 @@ internal class HeroesHordesEngine : GameEngineBase
         await PreStartAsync();
         var consumer = Task.Run(async () =>
         {
-            while (await ActionChannel.Reader.WaitToReadAsync())
+            while (ActionQueue.TryDequeue(out var action))
             {
-                if (ActionChannel.Reader.TryRead(out var action))
-                {
-                    var point = ToPoint(action.Point);
-                    Helper.Click(point.X, point.Y);
-                    await Task.Delay(action.Delay);
-                }
+                var point = ToPoint(action.Point);
+                Helper.Click(point.X, point.Y);
+                await Task.Delay(action.Delay);
             }
         });
 
@@ -88,7 +85,7 @@ internal class HeroesHordesEngine : GameEngineBase
         {
             Log($"第[{i}]次运行...");
             i++;
-            await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
+            ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
 
             if (!await StartAsync())
             {
@@ -103,8 +100,6 @@ internal class HeroesHordesEngine : GameEngineBase
 
             await Task.Delay(10 * 1000);
         }
-
-        ActionChannel.Writer.Complete();
         await consumer;
     }
 
@@ -132,7 +127,7 @@ internal class HeroesHordesEngine : GameEngineBase
     {
         if (WaitToPlay())
         {
-            await ActionChannel.Writer.WriteAsync(new ClickAction(PlayPoint, 200));
+            ActionQueue.Enqueue(new ClickAction(PlayPoint, 200));
 
             if (IsMatchImage(DialogCloseRect, CloseImage))
             {
@@ -140,13 +135,13 @@ internal class HeroesHordesEngine : GameEngineBase
                 var point = DialogCloseRect.Start;
                 point.X += 0.015f;
                 point.Y += 0.01f;
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(point, 200));
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(point, 200));
             }
 
             if (IsMatchImage(NoEnergyRect, NoEnergyImage))
             {
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
                 Console.WriteLine("❌ 没有体力,等待10分钟");
                 await Task.Delay(10 * 60 * 1000);
                 return false;
@@ -169,27 +164,27 @@ internal class HeroesHordesEngine : GameEngineBase
             var waitSeconds = 3600;
             if (IsWaveEnd())
             {
-                await ClearQueueAsync();
+                ClearQueue();
                 Log("Wave End");
-                await ActionChannel.Writer.WriteAsync(new ClickAction(WavePoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(WavePoint, 200));
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
                 await Task.Delay(2000);
 
             }
             else if (IsReward())
             {
-                await ClearQueueAsync();
+                ClearQueue();
                 Log("Reward");
-                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
-                await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 500));
+                ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
+                ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
                 await Task.Delay(3000);
             }
             else
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    await LoopActionAsync();
+                    LoopAction();
                 }
             }
             await Task.Delay(waitSeconds);
@@ -202,11 +197,11 @@ internal class HeroesHordesEngine : GameEngineBase
     /// 循环操作
     /// </summary>
     /// <returns></returns>
-    public async Task LoopActionAsync()
+    public void LoopAction()
     {
-        await ActionChannel.Writer.WriteAsync(new ClickAction(MainChosePoint, 200));
-        await ActionChannel.Writer.WriteAsync(new ClickAction(SecondChosePoint, 200));
-        await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
+        ActionQueue.Enqueue(new ClickAction(MainChosePoint, 200));
+        ActionQueue.Enqueue(new ClickAction(SecondChosePoint, 200));
+        ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
     }
 
     /// <summary>
@@ -215,30 +210,24 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <returns></returns>
     public async Task EndActionsAsync()
     {
-        ClearQueueAsync();
+        ClearQueue();
         Log("End");
-        await ActionChannel.Writer.WriteAsync(new ClickAction(OpenBoxPoint, 200));
+        ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
         await Task.Delay(2500);
-        await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
+        ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
         await Task.Delay(500);
-        await ActionChannel.Writer.WriteAsync(new ClickAction(RewardPoint, 200));
+        ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
         await Task.Delay(6000);
         for (int i = 0; i < 4; i++)
         {
-            await ActionChannel.Writer.WriteAsync(new ClickAction(NoActionPoint, 500));
+            ActionQueue.Enqueue(new ClickAction(NoActionPoint, 500));
         }
     }
 
     // 清空队列 
-    private async Task ClearQueueAsync()
+    private void ClearQueue()
     {
-        if (await ActionChannel.Reader.WaitToReadAsync())
-        {
-            while (ActionChannel.Reader.TryRead(out var action))
-            {
-                Console.WriteLine(action.ToString());
-            }
-        }
+        while (ActionQueue.TryDequeue(out _)) { }
     }
 
     private bool IsReward()
