@@ -9,12 +9,12 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <summary>
     /// 主要点击
     /// </summary>
-    public NormalizedPoint MainChosePoint { get; set; } = new(0.7996f, 0.5524f);
+    public NormalizedPoint MainChosePoint { get; set; } = new(0.5061f, 0.6321f);
 
     /// <summary>
     /// 次要点击
     /// </summary>
-    public NormalizedPoint SecondChosePoint { get; set; } = new(0.7895f, 0.41f);
+    public NormalizedPoint SecondChosePoint { get; set; } = new(0.5061f, 0.4043f);
 
     /// <summary>
     /// play按钮位置
@@ -131,27 +131,30 @@ internal class HeroesHordesEngine : GameEngineBase
         if (WaitToPlay())
         {
             ActionQueue.Enqueue(new ClickAction(PlayPoint, 200));
-
-            if (IsMatchImage(DialogCloseRect, CloseImage))
-            {
-                Console.WriteLine("😓 Has Dialog!");
-                var point = DialogCloseRect.Start;
-                point.X += 0.015f;
-                point.Y += 0.01f;
-                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
-                ActionQueue.Enqueue(new ClickAction(point, 200));
-            }
+            await Task.Delay(1000);
 
             if (IsMatchImage(NoEnergyRect, NoEnergyImage))
             {
                 ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
-                Console.WriteLine("❌ 没有体力,等待10分钟");
+                Log("❌ 没有体力,等待10分钟");
                 await Task.Delay(10 * 60 * 1000);
                 return false;
             }
 
             Log("🚀 New Round!");
             await Task.Delay(3500);
+        }
+        else
+        {
+            if (IsMatchImage(DialogCloseRect, CloseImage))
+            {
+                Log("😓 Has Dialog!");
+                var point = DialogCloseRect.Start;
+                point.X += 0.015f;
+                point.Y += 0.01f;
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(point, 200));
+            }
         }
         return true;
     }
@@ -185,7 +188,7 @@ internal class HeroesHordesEngine : GameEngineBase
             }
             else
             {
-                for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     LoopAction();
                 }
@@ -202,6 +205,7 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <returns></returns>
     public void LoopAction()
     {
+        ActionQueue.Enqueue(new ClickAction(MainChosePoint, 200));
         ActionQueue.Enqueue(new ClickAction(MainChosePoint, 200));
         ActionQueue.Enqueue(new ClickAction(SecondChosePoint, 200));
         ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
