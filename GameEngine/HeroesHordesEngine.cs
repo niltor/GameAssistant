@@ -103,7 +103,7 @@ internal class HeroesHordesEngine : GameEngineBase
             SetFlag(ref IsRunning, false);
             SetFlag(ref IsPausing, true);
 
-            await Task.Delay(10 * 1000);
+            await Task.Delay(20 * 1000);
         }
         await consumer;
     }
@@ -201,6 +201,7 @@ internal class HeroesHordesEngine : GameEngineBase
                 Log("Reward");
                 ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
                 ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
+                ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
                 await Task.Delay(3000);
             }
             else
@@ -241,14 +242,14 @@ internal class HeroesHordesEngine : GameEngineBase
         ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
         await Task.Delay(500);
         ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
-        await Task.Delay(6000);
+        await Task.Delay(10_1000);
         for (int i = 0; i < 4; i++)
         {
             ActionQueue.Enqueue(new ClickAction(NoActionPoint, 500));
         }
     }
 
-    // 清空队列 
+    // 清空队列
     private void ClearQueue()
     {
         while (ActionQueue.TryDequeue(out _)) { }
