@@ -58,6 +58,8 @@ internal class HeroesHordesEngine : GameEngineBase
     private static bool IsPausing = false;
     private static bool IsRunning = false;
 
+    public double SimilarityThreshold { get; set; } = 0.8;
+
     public HeroesHordesEngine(string windowName, int actionBarHeight = 36) : base(windowName, actionBarHeight)
     {
         GameName = "HeroesHordes";
@@ -154,6 +156,21 @@ internal class HeroesHordesEngine : GameEngineBase
                 point.Y += 0.01f;
                 ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
                 ActionQueue.Enqueue(new ClickAction(point, 200));
+                await Task.Delay(2000);
+            }
+            else
+            {
+
+                var point = ToPoint(new NormalizedPoint(1, 1));
+                var bitmap = Helper.CaptureScreen(0, 0, point.X, point.Y);
+                using var stream = new MemoryStream();
+                bitmap.Save(stream, ImageFormat.Jpeg);
+                var imageBytes = stream.ToArray();
+                stream.Close();
+                bitmap.Save("error.jpg", ImageFormat.Jpeg);
+                Log(GameName + "未知状态:");
+
+                ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
             }
         }
         return true;
@@ -260,7 +277,19 @@ internal class HeroesHordesEngine : GameEngineBase
     /// <exception cref="ArgumentNullException"></exception>
     private bool IsEnd()
     {
-        return IsMatchImage(EndRect, EndImage);
+        var point = ToPoint(EndRect.Start);
+        var size = ToSize(EndRect.Size);
+        var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, ImageFormat.Jpeg);
+        var imageBytes = stream.ToArray();
+        stream.Close();
+        var text = Helper.GetTextFromOCR(imageBytes);
+        if (text.StartsWith("CHAPTER", StringComparison.InvariantCultureIgnoreCase))
+        {
+            return true;
+        }
+        return false;
     }
 
 
@@ -276,7 +305,12 @@ internal class HeroesHordesEngine : GameEngineBase
         var imageBytes = stream.ToArray();
         stream.Close();
         var similarity = ActionHelper.GetSimilar(imageBytes, compareBytes);
-        return similarity > 0.5;
+
+        if (similarity > SimilarityThreshold)
+        {
+            Log($"{nameof(rect)} Similarity: {similarity}");
+        }
+        return similarity > SimilarityThreshold;
     }
 
     private bool WaitToPlay()
@@ -287,9 +321,10 @@ internal class HeroesHordesEngine : GameEngineBase
         using var stream = new MemoryStream();
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
-
         stream.Close();
         var text = Helper.GetTextFromOCR(imageBytes);
+
+        Log("WaitToPlay:" + text);
 
         return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
     }
