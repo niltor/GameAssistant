@@ -144,7 +144,9 @@ internal class HeroesHordesEngine : GameEngineBase
             }
 
             Log("🚀 New Round!");
+            ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
             await Task.Delay(3500);
+            ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
         }
         else
         {
@@ -237,8 +239,9 @@ internal class HeroesHordesEngine : GameEngineBase
     {
         ClearQueue();
         Log("End");
-        ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
-        await Task.Delay(2500);
+        ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 500));
+        ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 500));
+        await Task.Delay(2000);
         ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
         await Task.Delay(500);
         ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
