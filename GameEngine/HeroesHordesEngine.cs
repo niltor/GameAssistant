@@ -21,6 +21,7 @@ internal class HeroesHordesEngine : GameEngineBase
     /// </summary>
     public NormalizedPoint PlayPoint { get; set; } = new(0.4453f, 0.7973f);
 
+
     /// <summary>
     /// 奖励点击坐标
     /// </summary>
@@ -37,6 +38,8 @@ internal class HeroesHordesEngine : GameEngineBase
     /// play 按钮位置
     /// </summary>
     public NormalizedRect PlayRect { get; set; } = new(0.3543f, 0.7631f, 0.5061f, 0.7973f);
+
+    public NormalizedRect PlayHardRect { get; set; } = new(0.4251f, 0.7893f, 0.5789f, 0.8269f);
 
     public NormalizedRect EndRect { get; set; } = new(0.1417f, 0.0513f, 0.8603f, 0.1139f);
 
@@ -328,9 +331,17 @@ internal class HeroesHordesEngine : GameEngineBase
         stream.Close();
         var text = Helper.GetTextFromOCR(imageBytes);
 
-        Log("WaitToPlay:" + text);
+        var hardPoint = ToPoint(PlayHardRect.Start);
+        var hardSize = ToSize(PlayHardRect.Size);
+        var hardBitmap = Helper.CaptureScreen(hardPoint.X, hardPoint.Y, hardSize.X, hardSize.Y);
+        using var hardStream = new MemoryStream();
+        hardBitmap.Save(hardStream, ImageFormat.Jpeg);
+        var hardImageBytes = hardStream.ToArray();
+        hardStream.Close();
+        var hardText = Helper.GetTextFromOCR(hardImageBytes);
 
-        return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
+        return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase)
+            || hardText.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
     }
 
     private void SetFlag(ref bool flag, bool val)
