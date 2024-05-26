@@ -39,7 +39,7 @@ internal class HeroesHordesEngine : GameEngineBase
     /// </summary>
     public NormalizedRect PlayRect { get; set; } = new(0.3543f, 0.7631f, 0.5061f, 0.7973f);
 
-    public NormalizedRect PlayHardRect { get; set; } = new(0.4251f, 0.7893f, 0.5789f, 0.8269f);
+    public NormalizedRect PlayHardRect { get; set; } = new(0.4049f, 0.7631f, 0.5567f, 0.7973f);
 
     public NormalizedRect EndRect { get; set; } = new(0.1417f, 0.0513f, 0.8603f, 0.1139f);
 
@@ -329,7 +329,7 @@ internal class HeroesHordesEngine : GameEngineBase
         bitmap.Save(stream, ImageFormat.Jpeg);
         var imageBytes = stream.ToArray();
         stream.Close();
-        var text = Helper.GetTextFromOCR(imageBytes);
+        var text = Helper.GetTextFromOCR(imageBytes).Trim();
 
         var hardPoint = ToPoint(PlayHardRect.Start);
         var hardSize = ToSize(PlayHardRect.Size);
@@ -338,7 +338,9 @@ internal class HeroesHordesEngine : GameEngineBase
         hardBitmap.Save(hardStream, ImageFormat.Jpeg);
         var hardImageBytes = hardStream.ToArray();
         hardStream.Close();
-        var hardText = Helper.GetTextFromOCR(hardImageBytes);
+        var hardText = Helper.GetTextFromOCR(hardImageBytes).Trim();
+
+        Log($"WaitToPlay: {text} or {hardText}");
 
         return text.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase)
             || hardText.Contains("PLAY", StringComparison.InvariantCultureIgnoreCase);
