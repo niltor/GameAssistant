@@ -34,6 +34,8 @@ internal class HeroesHordesEngine : GameEngineBase
     /// </summary>
     public NormalizedPoint WavePoint { get; set; } = new(0.5f, 0.7062f);
 
+    public NormalizedPoint DeadPoint { get; set; } = new(0.3036f, 0.9112f);
+
     /// <summary>
     /// play 按钮位置
     /// </summary>
@@ -49,6 +51,8 @@ internal class HeroesHordesEngine : GameEngineBase
 
     public NormalizedRect NoEnergyRect { get; set; } = new(0.332f, 0.2802f, 0.6802f, 0.3235f);
 
+    public NormalizedRect DeadRect { get; set; } = new(0.2024f, 0.8941f, 0.4049f, 0.9282f);
+
     public NormalizedRect DialogCloseRect { get; set; } = new(0.8158f, 0.1481f, 0.8927f, 0.1913f);
 
     public byte[]? EndImage { get; set; }
@@ -61,7 +65,7 @@ internal class HeroesHordesEngine : GameEngineBase
     private static bool IsPausing = false;
     private static bool IsRunning = false;
 
-    public double SimilarityThreshold { get; set; } = 0.8;
+    public double SimilarityThreshold { get; set; } = 0.75;
 
     public HeroesHordesEngine(string windowName, int actionBarHeight = 36) : base(windowName, actionBarHeight)
     {
@@ -173,9 +177,10 @@ internal class HeroesHordesEngine : GameEngineBase
                 var imageBytes = stream.ToArray();
                 stream.Close();
                 bitmap.Save("error.jpg", ImageFormat.Jpeg);
-                Log(GameName + "未知状态:");
+                Log("进行中或其他状态:");
 
                 ActionQueue.Enqueue(new ClickAction(NoActionPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(RewardPoint, 200));
             }
         }
         return true;
@@ -204,10 +209,18 @@ internal class HeroesHordesEngine : GameEngineBase
             {
                 ClearQueue();
                 Log("Reward");
-                ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
-                ActionQueue.Enqueue(new ClickAction(RewardPoint, 500));
+                ActionQueue.Enqueue(new ClickAction(RewardPoint, 1000));
+                ActionQueue.Enqueue(new ClickAction(RewardPoint, 1000));
                 ActionQueue.Enqueue(new ClickAction(OpenBoxPoint, 200));
                 await Task.Delay(3000);
+            }
+            else if (IsDead())
+            {
+                ClearQueue();
+                Log("Dead");
+                ActionQueue.Enqueue(new ClickAction(DeadPoint, 200));
+                ActionQueue.Enqueue(new ClickAction(DeadPoint, 200));
+                await Task.Delay(2000);
             }
             else
             {
@@ -259,6 +272,24 @@ internal class HeroesHordesEngine : GameEngineBase
     private void ClearQueue()
     {
         while (ActionQueue.TryDequeue(out _)) { }
+    }
+
+    private bool IsDead()
+    {
+        var point = ToPoint(DeadRect.Start);
+        var size = ToSize(DeadRect.Size);
+        var bitmap = Helper.CaptureScreen(point.X, point.Y, size.X, size.Y);
+        using var stream = new MemoryStream();
+        bitmap.Save(stream, ImageFormat.Jpeg);
+        var imageBytes = stream.ToArray();
+        stream.Close();
+        var text = Helper.GetTextFromOCR(imageBytes);
+        if (text.StartsWith("REVIVE", StringComparison.InvariantCultureIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+
     }
 
     private bool IsReward()
@@ -313,10 +344,7 @@ internal class HeroesHordesEngine : GameEngineBase
         stream.Close();
         var similarity = ActionHelper.GetSimilar(imageBytes, compareBytes);
 
-        if (similarity > SimilarityThreshold)
-        {
-            Log($"{nameof(rect)} Similarity: {similarity}");
-        }
+        //Log($"{nameof(rect)} Similarity: {similarity}");
         return similarity > SimilarityThreshold;
     }
 
