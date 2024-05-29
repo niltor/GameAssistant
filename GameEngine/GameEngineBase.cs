@@ -21,7 +21,7 @@ internal class GameEngineBase(string windowName, int actionBarHight)
     public void Log(string content)
     {
         var dirName = "./logs";
-        var date = DateTime.Now.ToString("yyyy-MM-dd");
+        var date = DateTime.Now.ToString("yyyy-MM");
         if (!Directory.Exists(dirName))
         {
             Directory.CreateDirectory(dirName);
